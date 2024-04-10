@@ -14,8 +14,6 @@ code {
 }
 
 
-
-
 button, button:focus{
   border-width: 0px;
   outline:0; 
@@ -323,8 +321,6 @@ label.description-text{
 }
 
 label.relevance-text{
-
-
   color: #757575;
 }
 
