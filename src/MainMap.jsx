@@ -2,6 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { YMaps, Map, Placemark, ObjectManager } from '@pbe/react-yandex-maps';
 import Modal from 'react-modal';
 import axios from 'axios';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Font } from "@react-pdf/renderer"
+Font.register({
+  family: "Roboto",
+  fonts: [
+    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf", fontWeight: 300 },
+    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-regular-webfont.ttf", fontWeight: 400 },
+    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-medium-webfont.ttf", fontWeight: 500 },
+    { src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-bold-webfont.ttf", fontWeight: 600 },
+  ],
+})
+const styles = StyleSheet.create({
+  page: {
+    fontFamily: "Roboto",
+    backgroundColor: "#ffffff",
+    padding: 24,
+  }
+})
 
 
 const MainMap = () => {
@@ -20,6 +39,7 @@ const MainMap = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [nameM, setNameM] = useState([]);
+  const [nameTrueM, setNameTrueM] = useState([]);
   const [descriptionM, setDescriptionM] = useState([]);
   const [username, setUsername] = useState('');
   const [login, setLogin] = useState('');
@@ -33,14 +53,22 @@ const MainMap = () => {
   const [indexes, setIndexes] = useState([]);
   const [maxIndex, setMaxIndex] = useState(0);
   const [relevances, setRelevances] = useState([]);
+  const [trueRelevances, setTrueRelevances] = useState([]);
   const [commentsList, setCommentsList] = useState([]);
   const [relevanceText, setRelevanceText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [likeCount, setLikeCount] = useState(0);
+  const [dislikeCount, setDislikeCount] = useState(0);
 
   const addNameToArray = (nameM) => {
     setNameM((currentNames) => {
       return [...currentNames, nameM];
     });};
+
+    const addTrueNameToArray = (nameTrueM) => {
+      setNameTrueM((currentNames) => {
+        return [...currentNames, nameTrueM];
+      });};
 
     const addDescriptionToArray = (descriptionM) => {
       setDescriptionM((currentDescription) => {
@@ -57,6 +85,11 @@ const MainMap = () => {
         return [...currentRelevance, relevances];
       });};
 
+      const addTrueRelevanceToArray = (trueRelevances) => {
+        setTrueRelevances((currentRelevance) => {
+          return [...currentRelevance, trueRelevances];
+        });};
+
   useEffect(() => { 
       async function fetchData() {
           try {
@@ -71,6 +104,16 @@ const MainMap = () => {
                 addDescriptionToArray(item.description);
                 addRelevanceToArray(item.relevance);
                 if(item.is_delete != 1){
+                  addTrueNameToArray(item.name);
+                  if(item.relevance == 1){
+                    addTrueRelevanceToArray('Статус: В ожидании');
+                  }
+                  if(item.relevance == 2){
+                    addTrueRelevanceToArray('Статус: Выполнено');
+                  }
+                  if(item.relevance == 3){
+                    addTrueRelevanceToArray('Статус: Отклонено');
+                  }
                   setPlacemarks(placemarks => {
                     return [...placemarks, coordinates];
                   });
@@ -169,6 +212,16 @@ const MainMap = () => {
       console.error('Error:', error);
     });
 
+    if(isEvaluation != 1 && isEvaluation != 2){
+      setLikeCount(likeCount+1);
+    }
+    if(isEvaluation == 1){
+      setLikeCount(likeCount+1);
+      setDislikeCount(dislikeCount-1);
+    }
+    if(isEvaluation == 2){
+      setLikeCount(likeCount);
+    }
 
     setIsEvaluation(2);
   };
@@ -176,7 +229,6 @@ const MainMap = () => {
   const handleDislikeSubmit = (e) => {
     e.preventDefault();
 
-  
     fetch('http://127.0.0.1:8000/evaluate-proposal/', {
       method: 'POST',
       headers: {
@@ -195,7 +247,16 @@ const MainMap = () => {
     .catch((error) => {
       console.error('Error:', error);
     });
-
+    if(isEvaluation != 1 && isEvaluation != 2){
+      setDislikeCount(dislikeCount+1);
+    }
+    if(isEvaluation == 1){
+      setDislikeCount(dislikeCount);
+    }
+    if(isEvaluation == 2){
+      setLikeCount(likeCount-1);
+      setDislikeCount(dislikeCount+1);
+    }
 
 
     setIsEvaluation(1);
@@ -203,13 +264,19 @@ const MainMap = () => {
 
 const handleRegisterSubmit = (e) => {
   e.preventDefault();
-  setIsModalRegisterOpen(false);
-  registerUser(username, email, password).then((data) => {
-  isModalRegisterOpen(false);
-  })
-  .catch((error) => {
-    console.error('Ошибка при регистрации пользователя', error);
-  });
+  if(username == '' || email == '' || password == ''){
+    setAttention('Заполните все поля');
+    setIsModalAttentionOpen(true);
+  }
+  else{
+    setIsModalRegisterOpen(false);
+    registerUser(username, email, password).then((data) => {
+    isModalRegisterOpen(false);
+    }).catch((error) => {
+      console.error('Ошибка при регистрации пользователя', error);
+    })
+  } ;
+
 };
 
 
@@ -221,40 +288,94 @@ const handleCommentSubmit = async (e) => {
     setIsModalAttentionOpen(true);
   }
   else{
-        const dataToSend = {
-          login: login, 
-          id_proposal: indexProposal,
-          text: commentText,
-      };
-      console.log(dataToSend);
-      axios.post('http://127.0.0.1:8000/comment/create/', dataToSend, {
-          headers: {
-              'Authorization': `JWT ${access}`,
-          }
-      }).then(response => {})
-          .catch(error => {
-              console.error('Ошибка при отправке запроса:', error);
-          });
-          try {
-            const response = await fetch(`http://127.0.0.1:8000/comment/${indexProposal}/`);
-            const data = await response.json();
-            setCommentsList(data.comments);
-        } catch (error) {
-            console.error('Error fetching comments:', error);
+    if(commentText == ''){
+      setAttention('Текст комментария пуст');
+      setIsModalAttentionOpen(true);
+    }
+    else{
+      const dataToSend = {
+        login: login, 
+        id_proposal: indexProposal,
+        text: commentText,
+    };
+    console.log(dataToSend);
+    axios.post('http://127.0.0.1:8000/comment/create/', dataToSend, {
+        headers: {
+            'Authorization': `JWT ${access}`,
         }
+    }).then(response => {})
+        .catch(error => {
+            console.error('Ошибка при отправке запроса:', error);
+        });
+        try {
+          const response = await fetch(`http://127.0.0.1:8000/comment/${indexProposal}/`);
+          const data = await response.json();
+          setCommentsList(data.comments);
+      } catch (error) {
+          console.error('Error fetching comments:', error);
+      }
+    }
+      
     }
   };
 
+
+  async function deleteProposal() {
+    const response = await fetch(`http://127.0.0.1:8000/proposal/delete/${indexProposal}/`, {
+      method: 'PUT', 
+      headers: {
+          'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({is_delete: 1}),
+  });
+}
+
+
+  async function fetchData() {
+    try {
+      setEntryText('Войти');
+      const res = await axios.get('http://127.0.0.1:8000/proposal/get/');
+        const proposalData = res.data.proposal;
+        proposalData.forEach(item => {
+          const coordinates = item.coordinates.split(',').map(Number);
+          addNameToArray(item.name);
+          addIdToArray(item.id);
+          setMaxIndex(item.id);
+          addDescriptionToArray(item.description);
+          addRelevanceToArray(item.relevance);
+          if(item.is_delete != 1){
+            setPlacemarks(placemarks => {
+              return [...placemarks, coordinates];
+            });
+          }
+          else{
+            const coordinates = '-85.05677665947692,20.51358261427779'.split(',').map(Number);
+            setPlacemarks(placemarks => {
+              return [...placemarks, coordinates];
+            });
+          }
+          
+        });
+    } catch (error) {
+      console.error('Ошибка при загрузке данных:', error);
+    }
+}
+
   const handleDeleteSubmit = (e) => {
     e.preventDefault();
-    const response = fetch(`http://127.0.0.1:8000/proposal/delete/${indexProposal}/`, {
-        method: 'PUT', 
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({is_delete: 1}),
-    });
+    setIsModalProposalOpen(false);
+    setPlacemarks([]);
+    async function handleDeleteAndFetch() {
    
+      await deleteProposal();
+    
+    
+      fetchData();
+    }
+    
+    handleDeleteAndFetch();
+    
+ 
 };
 
   const handleStatusSubmit = (e) => {
@@ -291,6 +412,8 @@ const handleLoginSubmit = async (e) => {
     setIsModalLoginOpen(false);
   } catch (error) {
     console.error('Ошибка при получении токена', error);
+    setAttention('Неверный логин или пароль');
+    setIsModalAttentionOpen(true);
   }
 };
 
@@ -387,10 +510,8 @@ const handleMapClick = (e) => {
         setIsEvaluation(proposalData.evaluation);
     } catch (error) {
         console.error('Произошла ошибка при получении данных:', error);
-     console.log(indexes[index]);
     }
-   
-
+  
     const fetchComments = async () => {
       try {
           const response = await fetch(`http://127.0.0.1:8000/comment/${indexes[index]}/`);
@@ -400,7 +521,27 @@ const handleMapClick = (e) => {
           console.error('Error fetching comments:', error);
       }
   };
+  const fetchEvaluationLike = async () => {
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/proposal-count-like/${indexes[index]}/`);
+        const data = await response.json();
+        setLikeCount(data.count);
+    } catch (error) {
+        console.error('Error fetching evaluations:', error);
+    }
+  }
+  const fetchEvaluationDislike = async () => {
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/proposal-count-dislike/${indexes[index]}/`);
+        const data = await response.json();
+        setDislikeCount(data.count);
+    } catch (error) {
+        console.error('Error fetching evaluations:', error);
+    }
+  }
   fetchComments();
+  fetchEvaluationLike();
+  fetchEvaluationDislike();
 
 
     if(relevances[index]==1){
@@ -429,6 +570,7 @@ const handleMapClick = (e) => {
   }
 
   function getEvaluationDislikeClass(isEvaluation) {
+  
     switch (isEvaluation) {
       case 0:
         return 'grey';
@@ -442,6 +584,7 @@ const handleMapClick = (e) => {
   }
 
   function getEvaluationLikeClass(isEvaluation) {
+   
     switch (isEvaluation) {
       case 0:
         return 'grey';
@@ -465,6 +608,8 @@ const handleMapClick = (e) => {
   };
 
 
+
+
   const RoundButton = ({ handleCreatePlacemark }) => {
     return (
       <button
@@ -475,14 +620,36 @@ const handleMapClick = (e) => {
     );
   };
 
+  const combinedData = nameTrueM.map((name, index) => ({
+    nameTrueM: name,
+    trueRelevance: trueRelevances[index]
+  }));
+
   const Header = () => {
     return (
       <div className="header">
         <RoundButton handleCreatePlacemark={handleCreatePlacemark} />
         <LoginButton handleLogin={handleLogin} />
+        <PDFDownloadLink document={<MyPDFDocument data={combinedData} />} fileName="myDocument.pdf"> 
+          {({ blob, url, loading, error }) => (loading ? 'Loading document...' : 'Скачать все заявки')} 
+        </PDFDownloadLink>
       </div>
     );
   };
+
+  const MyPDFDocument = ({ data }) => ( 
+    <Document>  
+      <Page style={styles.page}>  
+        {data.map(({ nameTrueM, trueRelevance }, index) => (  
+          <React.Fragment key={index}>
+            <Text>{nameTrueM}</Text>
+            <Text>{'\t\t\t' + trueRelevance }</Text>
+            <Text>{' '}</Text>
+          </React.Fragment>
+        ))}  
+      </Page>  
+    </Document> 
+  );
 
   return (
     <div>
@@ -502,6 +669,7 @@ const handleMapClick = (e) => {
         </Map>
       </YMaps>
 
+      
 
          {/* Модальное окно с формой регистрации */}
          <Modal isOpen={isModalRegisterOpen} className="modal-form" onRequestClose={() => setIsModalRegisterOpen(false)}>
@@ -582,15 +750,17 @@ const handleMapClick = (e) => {
                   <div className="horizontal"> 
                     <form onSubmit={handleLikeSubmit}>
                       <button className={`like-${getEvaluationLikeClass(isEvaluation)}`} type="submit">Нравится</button>
+                      <label className="description-text">{likeCount.toString()}</label>
                     </form>
                     <form onSubmit={handleDislikeSubmit}>
                       <button className={`dislike-${getEvaluationDislikeClass(isEvaluation)}`} type="submit">Не нравится</button>
+                      <label className="description-text">{dislikeCount.toString()}</label>
                     </form>               
                   </div>
                 )}
           </div>
-        </Modal>
 
+        </Modal>
               {/* Модальное окно с требованием авторизоваться */}
               <Modal isOpen={isModalAttentionOpen} className="attention-modal-form" onRequestClose={() => setIsModalAttentionOpen(false)}>
           <div>
@@ -606,7 +776,16 @@ const handleMapClick = (e) => {
       <Modal isOpen={isModalOpen} className="main-modal-form" onRequestClose={() => setIsModalOpen(false)}>
         <form onSubmit={(e) => {
           e.preventDefault();
-          setIsModalOpen(false);
+          if(name == '' || description == ''){
+            setIsModalOpen(false);
+            setAttention('Заполните все поля');
+            setIsModalAttentionOpen(true);
+            setIsPlacemarkSet(true);
+          }
+          else{
+            setIsModalOpen(false);
+          }
+      
         }}>
           <label>
             Проблема
