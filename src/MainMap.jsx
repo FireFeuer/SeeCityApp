@@ -32,15 +32,18 @@ const MainMap = () => {
   const [isPlacemarkSet, setIsPlacemarkSet] = useState(true);
   const [isEvaluation, setIsEvaluation] = useState(0);
   const [placemarks, setPlacemarks] = useState([]);
-  const [comments, setComments] = useState([]);
   const [attention, setAttention] = useState('');
   const [is_staff, setIsStaff] = useState(false);
   const [entryText, setEntryText] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [date, setDate] = useState('');
   const [nameM, setNameM] = useState([]);
   const [nameTrueM, setNameTrueM] = useState([]);
   const [descriptionM, setDescriptionM] = useState([]);
+  const [descriptionTrueM, setDescriptionTrueM] = useState([]);
+  const [dateTrueM, setDateTrueM] = useState([]);
+  const [dateM, setDateM] = useState([]);
   const [username, setUsername] = useState('');
   const [login, setLogin] = useState('');
   const [commentText, setCommentText] = useState('');
@@ -48,10 +51,12 @@ const MainMap = () => {
   const [password, setPassword] = useState('');
   const [nameIndex, setNameIndex] = useState('');
   const [descriptionIndex, setDescriptionIndex] = useState('');
+  const [dateIndex, setDateIndex] = useState('');
   const [access, setAccess] = useState('');
   const [indexProposal, setIndexProposal] = useState(0);
   const [indexes, setIndexes] = useState([]);
   const [maxIndex, setMaxIndex] = useState(0);
+  const [relevanceIndex, setRelevanceIndex] = useState(0);
   const [relevances, setRelevances] = useState([]);
   const [trueRelevances, setTrueRelevances] = useState([]);
   const [commentsList, setCommentsList] = useState([]);
@@ -70,9 +75,25 @@ const MainMap = () => {
         return [...currentNames, nameTrueM];
       });};
 
+      const addTrueDescriptionToArray = (descriptionTrueM) => {
+        setDescriptionTrueM((currentDescriptions) => {
+          return [...currentDescriptions, descriptionTrueM];
+        });};
+
+        const addTrueDateToArray = (dateTrueM) => {
+          setDateTrueM((currentDates) => {
+            return [...currentDates, dateTrueM];
+          });};
+
     const addDescriptionToArray = (descriptionM) => {
       setDescriptionM((currentDescription) => {
         return [...currentDescription, descriptionM];
+      });};
+
+      
+    const addDateToArray = (dateM) => {
+      setDateM((currentDate) => {
+        return [...currentDate, dateM];
       });};
 
     const addIdToArray = (indexes) => {
@@ -103,8 +124,11 @@ const MainMap = () => {
                 setMaxIndex(item.id);
                 addDescriptionToArray(item.description);
                 addRelevanceToArray(item.relevance);
+                addDateToArray(item.date_creation);
                 if(item.is_delete != 1){
                   addTrueNameToArray(item.name);
+                  addTrueDescriptionToArray(item.description);
+                  addTrueDateToArray(item.date_creation);
                   if(item.relevance == 1){
                     addTrueRelevanceToArray('Статус: В ожидании');
                   }
@@ -262,62 +286,60 @@ const MainMap = () => {
     setIsEvaluation(1);
   };
 
-const handleRegisterSubmit = (e) => {
-  e.preventDefault();
-  if(username == '' || email == '' || password == ''){
-    setAttention('Заполните все поля');
-    setIsModalAttentionOpen(true);
-  }
-  else{
-    setIsModalRegisterOpen(false);
-    registerUser(username, email, password).then((data) => {
-    isModalRegisterOpen(false);
-    }).catch((error) => {
-      console.error('Ошибка при регистрации пользователя', error);
-    })
-  } ;
-
-};
+  const handleRegisterSubmit = (e) => {
+    e.preventDefault();
+    if (/^\s*$/.test(username) || /^\s*$/.test(email) || /^\s*$/.test(password)) {
+      setAttention('Заполните все поля без пробелов');
+      setIsModalAttentionOpen(true);
+    } else {
+      setIsModalRegisterOpen(false);
+      registerUser(username, email, password).then((data) => {
+        isModalRegisterOpen(false);
+      }).catch((error) => {
+        console.error('Ошибка при регистрации пользователя', error);
+      });
+    }
+  };
 
 
 
 const handleCommentSubmit = async (e) => {
   e.preventDefault();
-  if(access == ''){
-    setAttention('Войдите в аккаунт, чтобы оставлять комментарии');
+
+  let dataToSend = {};
+  if(/^\s*$/.test(commentText)){
+    setAttention('Текст комментария пуст');
     setIsModalAttentionOpen(true);
   }
   else{
-    if(commentText == ''){
-      setAttention('Текст комментария пуст');
-      setIsModalAttentionOpen(true);
+    if(access === ''){
+      dataToSend = {
+        login: 'гость', 
+        id_proposal: indexProposal,
+        text: commentText,
+      };
     }
     else{
-      const dataToSend = {
+      dataToSend = {
         login: login, 
         id_proposal: indexProposal,
         text: commentText,
-    };
-    console.log(dataToSend);
-    axios.post('http://127.0.0.1:8000/comment/create/', dataToSend, {
-        headers: {
-            'Authorization': `JWT ${access}`,
-        }
-    }).then(response => {})
-        .catch(error => {
-            console.error('Ошибка при отправке запроса:', error);
-        });
-        try {
-          const response = await fetch(`http://127.0.0.1:8000/comment/${indexProposal}/`);
-          const data = await response.json();
-          setCommentsList(data.comments);
-      } catch (error) {
-          console.error('Error fetching comments:', error);
-      }
+      };
     }
-      
+
+    await axios.post('http://127.0.0.1:8000/comment/create/', dataToSend);
+
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/comment/${indexProposal}/`);
+      const data = await response.json();
+      setCommentsList([...data.comments]);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
     }
-  };
+ 
+    setCommentText('');
+  }
+};
 
 
   async function deleteProposal() {
@@ -333,7 +355,6 @@ const handleCommentSubmit = async (e) => {
 
   async function fetchData() {
     try {
-      setEntryText('Войти');
       const res = await axios.get('http://127.0.0.1:8000/proposal/get/');
         const proposalData = res.data.proposal;
         proposalData.forEach(item => {
@@ -365,10 +386,14 @@ const handleCommentSubmit = async (e) => {
     e.preventDefault();
     setIsModalProposalOpen(false);
     setPlacemarks([]);
+    setNameM([]);
+    setIndexes([]);
+    setDescriptionM([]);
+    setDateM([]);
+    setRelevances([]);
     async function handleDeleteAndFetch() {
    
       await deleteProposal();
-    
     
       fetchData();
     }
@@ -397,8 +422,10 @@ const handleCommentSubmit = async (e) => {
     if(selStatus == 3){
       setRelevanceText('Отклонено');
     }
+    relevances[relevanceIndex] = selStatus;
     
 };
+
 
 const handleLoginSubmit = async (e) => {
 
@@ -417,16 +444,25 @@ const handleLoginSubmit = async (e) => {
   }
 };
 
+function getCurrentDate(separator='-'){
 
-
+  let newDate = new Date()
+  let date = newDate.getDate();
+  let month = newDate.getMonth() + 1;
+  let year = newDate.getFullYear();
+  
+  return `${year}${separator}${month<10?`0${month}`:`${month}`}${separator}${date}`
+}
 
 
 const handleMapClick = (e) => {
   if (!isPlacemarkSet) {
       setIsPlacemarkSet(true);
       addNameToArray(name);
+      addDateToArray(getCurrentDate());
       addDescriptionToArray(description);
       addIdToArray(maxIndex+1);
+      setMaxIndex(maxIndex + 1);
       addRelevanceToArray(1);
       const coords = e.get("coords");
       setPlacemarks([...placemarks, coords]);
@@ -436,6 +472,7 @@ const handleMapClick = (e) => {
           coordinates: coords.toString(),
           login: login,
           relevance: 1,
+          date_creation: getCurrentDate(),
           is_delete: 0,
       };
       axios.post('http://127.0.0.1:8000/proposal/create/', dataToSend, {
@@ -501,7 +538,8 @@ const handleMapClick = (e) => {
     setIsModalRegisterOpen(false);
     setIsModalProposalOpen(true);
     setNameIndex(nameM[index]);
-    setDescriptionIndex(descriptionM[index]);
+    setDescriptionIndex('\t' + descriptionM[index]);
+    setDateIndex(dateM[index]);
     setIndexProposal(indexes[index]);
     setIsEvaluation(0);
       try {
@@ -553,6 +591,7 @@ const handleMapClick = (e) => {
     if(relevances[index]==3){
       setRelevanceText('Отклонено');
     }
+    setRelevanceIndex(index);
   };
 
 
@@ -622,7 +661,9 @@ const handleMapClick = (e) => {
 
   const combinedData = nameTrueM.map((name, index) => ({
     nameTrueM: name,
-    trueRelevance: trueRelevances[index]
+    descriptionTrueM: descriptionTrueM[index],
+    trueRelevance: trueRelevances[index],
+    dateTrueM: dateTrueM[index],
   }));
 
   const Header = () => {
@@ -630,20 +671,48 @@ const handleMapClick = (e) => {
       <div className="header">
         <RoundButton handleCreatePlacemark={handleCreatePlacemark} />
         <LoginButton handleLogin={handleLogin} />
+        {is_staff ? (
         <PDFDownloadLink document={<MyPDFDocument data={combinedData} />} fileName="myDocument.pdf"> 
           {({ blob, url, loading, error }) => (loading ? 'Loading document...' : 'Скачать все заявки')} 
         </PDFDownloadLink>
+            ) : null  }
       </div>
     );
   };
 
+  const MyPDFDocumentOneProposal = ({ data }) => ( 
+    <Document>  
+      <Page style={styles.page}>  
+      <Text style={{ fontSize: '29px' }}>            Информация о заявке</Text>
+      <Text style={{ fontSize: '19px' }}>{'Название: ' + nameIndex}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Описание: ' + descriptionIndex}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Статус: ' + relevanceText}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Дата: ' + dateIndex}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Положительных оценок: ' + likeCount.toString()}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Отрицательных оценок оценок: ' + dislikeCount.toString()}</Text>
+      <Text>{' '}</Text>
+      <Text style={{ fontSize: '24px' }}>{'Комментарии: '}</Text>
+        {data.map(({ login, text }, index) => (  
+          <React.Fragment key={index}>
+            <Text style={{ fontWeight: 'bold' , fontSize: '14px'}}>{'Логин: ' + login}</Text>
+            <Text style={{fontSize: '14px'}}>{'\t\t\t\Текст: ' + text }</Text>
+            <Text>{' '}</Text>
+          </React.Fragment>
+        ))}  
+      </Page>  
+    </Document> 
+  );
+
   const MyPDFDocument = ({ data }) => ( 
     <Document>  
       <Page style={styles.page}>  
-        {data.map(({ nameTrueM, trueRelevance }, index) => (  
+      <Text style={{ fontSize: '29px' }}>            Список заявок</Text>
+        {data.map(({ nameTrueM, descriptionTrueM, trueRelevance, dateTrueM }, index) => (  
           <React.Fragment key={index}>
-            <Text>{nameTrueM}</Text>
-            <Text>{'\t\t\t' + trueRelevance }</Text>
+            <Text style={{ fontWeight: 'bold' }}>{nameTrueM}</Text>
+            <Text>{'\t\t\t\tОписание: ' + descriptionTrueM }</Text>
+            <Text>{'\t\t\t\t' + trueRelevance }</Text>
+            <Text>{'\t\t\t\t' + dateTrueM }</Text>
             <Text>{' '}</Text>
           </React.Fragment>
         ))}  
@@ -709,9 +778,16 @@ const handleMapClick = (e) => {
           <div>
               <label className="name-text">{nameIndex}</label>
               <label className="description-text">{descriptionIndex}</label>
-              <label className={`relevance-text-${getColorClass(relevanceText)}`}>Статус: {relevanceText}</label>
+              <div className="horizontal">
+                <label className={`relevance-text-${getColorClass(relevanceText)}`}>Статус: {relevanceText}</label>
+                <label className="description-text">{dateIndex}</label>
+              </div>
+
+
+             
               {is_staff ? (
               <form onSubmit={handleStatusSubmit}>
+                   <br />
                 <div className="horizontal">
                   <select value={selectedStatus} onChange={event => setSelectedStatus(event.target.value)}>
                     <option value="1">В ожидании</option>
@@ -721,10 +797,15 @@ const handleMapClick = (e) => {
                   <button type="submit">Поменять статус</button>
                 </div>
               </form>
-               
+            
               ) : null  }
                {is_staff ? (
+                
               <form onSubmit={handleDeleteSubmit}>
+                 <PDFDownloadLink document={<MyPDFDocumentOneProposal data={commentsList} />} fileName="myProposal.pdf"> 
+                    {({ blob, url, loading, error }) => (loading ? 'Loading document...' : 'Скачать информацию об этой заявке')} 
+                </PDFDownloadLink>
+                   <br />
                 <div className="horizontal">
                   <button type="submit">Удалить</button>
                 </div>
@@ -732,12 +813,12 @@ const handleMapClick = (e) => {
 
               ) : null  }
               <form onSubmit={handleCommentSubmit}>
+              <br />
                   <div className="horizontal"> 
                       <input type="text" placeholder="Напишите комментарий" value={commentText} onChange={(e) => setCommentText(e.target.value)}/>
                       <button type="submit">=&gt;</button>
                   </div>
-              </form>
-              <ul>
+                  <ul>
                     {commentsList.map(comment => (
                         <li key={comment.id}>
                             <p><strong>Логин:</strong> {comment.login}</p>
@@ -745,6 +826,8 @@ const handleMapClick = (e) => {
                         </li>
                     ))}
                 </ul>
+              </form>
+            
 
                 {login !== '' && (
                   <div className="horizontal"> 
@@ -776,7 +859,7 @@ const handleMapClick = (e) => {
       <Modal isOpen={isModalOpen} className="main-modal-form" onRequestClose={() => setIsModalOpen(false)}>
         <form onSubmit={(e) => {
           e.preventDefault();
-          if(name == '' || description == ''){
+          if(/^\s*$/.test(name) || /^\s*$/.test(description)){
             setIsModalOpen(false);
             setAttention('Заполните все поля');
             setIsModalAttentionOpen(true);
