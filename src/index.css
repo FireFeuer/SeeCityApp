@@ -52,18 +52,6 @@ button, button:focus{
   font-weight: bold;
 }
 
-.bell-button {
-  background-color: #f1f1f1;
-  border-radius: 40px;
-  color: black;
-  padding: 12px 20px;
-  cursor: pointer;
-  font-size: 20px;
-  outline: none;
-  box-shadow: 0 1px 1px rgba(0,0,0,0.2);
-  font-weight: bold;
-  float: right;
-}
 
 .round-button {
   background-color: #e75480;
@@ -89,7 +77,7 @@ button, button:focus{
   top: -21px; 
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 50;
   width: 60%; 
   height: 89px;
   outline: none;
@@ -137,6 +125,25 @@ body .modal-form {
 }
 
 body .main-modal-form {
+  position: fixed; 
+  top: 54%; 
+  left: 40%;
+  transform: translateY(-50%) scale(1); 
+  max-width: 100%; 
+  max-height: 100%;
+  height: 82%;
+  width: 24%;
+  background-color: rgb(253, 253, 253); 
+  border-radius: 28px; 
+  box-shadow: 0 14px 18px rgba(10, 10, 10, 0.3); 
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  overflow-y: auto; 
+  z-index: 1000; 
+}
+
+body .archive-modal-form {
   position: fixed; 
   top: 54%; 
   left: 40%;
@@ -215,6 +222,8 @@ body .attention-modal-form {
 .modal-form button,
 .main-modal-form input,
 .main-modal-form button,
+.archive-modal-form input,
+.archive-modal-form button,
 .proposal-modal-form input,
 .proposal-modal-form button,
 .attention-modal-form button {
@@ -241,6 +250,10 @@ body .attention-modal-form {
   border: 2px solid #d1d1d1; 
 }
 
+.archive-modal-form input {
+  margin-bottom: 5px; 
+}
+
 .proposal-modal-form input{
   font-size: 1em;
   width:290%;
@@ -259,6 +272,20 @@ body .attention-modal-form {
   height: 5vh;
   font-size: 1.2em;
   font-weight: bold;
+}
+
+button.bell {
+  background-color: #f1f1f1;
+  border-radius: 40px;
+  color: black;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-size: 20px;
+  outline: none;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  font-weight: bold;
+  float: right;
+  width: auto;
 }
 
 .proposal-modal-form button{
@@ -632,13 +659,21 @@ button.dislike-comment-red{
   cursor: pointer;
 }
 
+.comments__proposal {
+  background-color: white;
+  padding: 0.8rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .comments {
   background-color: white;
   padding: 0.8rem;
   border-radius: 0.25rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow-y: auto;
-  max-height: 400px;
+  max-height: 700px;
+  width: 500px;
 }
 
 .comments__header {
@@ -693,4 +728,10 @@ button.red-button {
 
   height: 40px; 
   width: 90px; 
+}
+
+input[type="text"] {
+
+  padding: 2px 5px; /* Уменьшаем внутренние отступы */
+  font-size: 1em; /* Устанавливаем размер шрифта */
 }

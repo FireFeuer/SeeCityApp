@@ -31,10 +31,9 @@ function isValidISODate(dateString) {
   return isoDateRegex.test(dateString);
 }
 
-
 const MainMap = () => {
   const [map, setMap] = useState();
-  const [center, setCenter] = React.useState([55.75, 40.57]);
+  const [center, setCenter] = React.useState([54.82, 56.22]);
   const [zoom, setZoom] = React.useState(9);
   const mapState = React.useMemo(
     () => ({ center, zoom }),
@@ -42,6 +41,7 @@ const MainMap = () => {
   );
 
   const [isModalCreateOpen, setIsModalCreateOpen] = useState(false);
+  const [isModalArchiveOpen, setIsModalArchiveOpen] = useState(false);
   const [isModalLoginOpen, setIsModalLoginOpen] = useState(false);
   const [isModalRegisterOpen, setIsModalRegisterOpen] = useState(false);
   const [isModalProposalOpen, setIsModalProposalOpen] = useState(false);
@@ -89,18 +89,21 @@ const MainMap = () => {
   const [repeatPassword, setRepeatPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [search, setSearch] = useState('');
+  const [searchIndex, setSearchIndex] = useState('');
   const [complaint, setComplaint] = useState('');
   const [deleteLogin, setDeleteLogin] = useState('');
   const [deleteCommentId, setDeleteCommentId] = useState(0);
-
 
   const [nameIndex, setNameIndex] = useState('');
   const [descriptionIndex, setDescriptionIndex] = useState('');
   const [dateIndex, setDateIndex] = useState('');
   const [loginIndex, setLoginIndex] = useState('');
   const [relevanceIndex, setRelevanceIndex] = useState(0);
+  const [categoryIndex, setCategoryIndex] = useState(0);
   const [relevanceText, setRelevanceText] = useState('');
+  const [categoryText, setCategoryText] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedCategoryUser, setSelectedCategoryUser] = useState('');
 
   const [descriptionTrueM, setDescriptionTrueM] = useState([]);
   const [dateTrueM, setDateTrueM] = useState([]);
@@ -111,15 +114,16 @@ const MainMap = () => {
   const [dateM, setDateM] = useState([]);
   const [loginM, setLoginM] = useState([]);
   const [relevances, setRelevances] = useState([]);
+  const [categorys, setCategorys] = useState([]);
   const [commentsList, setCommentsList] = useState([]);
   const [notificationsList, setNotificationsList] = useState([]);
   const [profileProposals, setProfileProposals] = useState([]);
+  const [allProposals, setAllProposals] = useState([]);
   const [indexes, setIndexes] = useState([]);
   const [isEvaluationM, setEvaluations] = useState([]);
   const [likeCountM, setLikeCountM] = useState([]);
   const [dislikeCountM, setDislikeCountM] = useState([]);
   const [searchProposalList, setSearchProposalListM] = useState([]);
-
 
   const addNameToArray = (nameM) => {
     setNameM((currentNames) => {
@@ -166,6 +170,11 @@ const MainMap = () => {
       return [...currentRelevance, relevances];
     });};
 
+    const addCategoryToArray = (categorys) => {
+      setCategorys((currentCategory) => {
+        return [...currentCategory, categorys];
+      });};
+
   const addTrueRelevanceToArray = (trueRelevances) => {
     setTrueRelevances((currentRelevance) => {
       return [...currentRelevance, trueRelevances];
@@ -201,6 +210,7 @@ const MainMap = () => {
               addDescriptionToArray(item.description);
               addLoginToArray(item.login);
               addRelevanceToArray(item.relevance);
+              addCategoryToArray(item.category);
               addDateToArray(item.date_creation);
               if(item.is_delete != 1){
                 addTrueNameToArray(item.name);
@@ -238,13 +248,13 @@ const MainMap = () => {
 
 
   
-  async function registerUser(username, email, password) {
+  async function registerUser(username, email, password, is_staff) {
     const response = await fetch('http://127.0.0.1:8000/register/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ username, email, password }),
+      body: JSON.stringify({ username, email, password, is_staff }),
     });
     if (!response.ok) {
       throw new Error('Ошибка при регистрации пользователя');
@@ -388,7 +398,6 @@ const MainMap = () => {
       }
       setIsEvaluation(1);
     }
-    
   };
 
   const handleDislikeCommentSubmit = (commentId, index) => {
@@ -435,25 +444,41 @@ const MainMap = () => {
     if (/^\s*$/.test(username) || /^\s*$/.test(email) || /^\s*$/.test(password)) {
       setAttention('Заполните все поля без пробелов');
       setIsModalAttentionOpen(true);
+      setIsModalRegisterOpen(false);
     } else {
       if(password == repeatPassword){
-        setIsModalRegisterOpen(false);
-        registerUser(username, email, password).then((data) => {
-          isModalRegisterOpen(false);
-        }).catch((error) => {
-          console.error('Ошибка при регистрации пользователя', error);
-        });
+        if(username.length > 3 ){
+          if(password.length > 3){
+            setIsModalRegisterOpen(false);
+            registerUser(username, email, password, is_staff).then((data) => {
+              isModalRegisterOpen(false);
+            }).catch((error) => {
+              console.error('Ошибка при регистрации пользователя', error);
+            });
+          }
+          else{        
+            setAttention('Пароль должен быть более 3 символов');
+            setIsModalAttentionOpen(true);
+            setIsModalRegisterOpen(false);
+          }
+        }
+        else{        
+          setAttention('Логин должен быть более 3 символов');
+          setIsModalAttentionOpen(true);
+          setIsModalRegisterOpen(false);
+        }
       }
       else{
         setAttention('Пароли не совпадают');
         setIsModalAttentionOpen(true);
+        setIsModalRegisterOpen(false);
       }
-  
     }
   };
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
+  
     let dataToSend = {};
     if(/^\s*$/.test(commentText)){
       setAttention('Текст комментария пуст');
@@ -499,6 +524,13 @@ const MainMap = () => {
       },
       body: JSON.stringify({is_delete: 1}),
     });
+    const responseNotification = await fetch('http://127.0.0.1:8000/notification/create/', {
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json', 
+      },
+      body: JSON.stringify({ login: loginIndex, text: 'Вашу заявку с номером - ' + indexProposal + ' удалил администратор', familiarity: 0, link: indexProposal }), 
+    });
   }
 
   async function fetchData() {
@@ -514,6 +546,7 @@ const MainMap = () => {
           addLoginToArray(item.login);
           addDateToArray(item.date_creation);
           addRelevanceToArray(item.relevance);
+          addCategoryToArray(item.category);
           if(isValidISODate(dateFilterStart) && isValidISODate(dateFilterEnd)){
            
             if(item.is_delete != 1 && item.date_creation >= dateFilterStart && item.date_creation <= dateFilterEnd){
@@ -563,6 +596,7 @@ const MainMap = () => {
           addLoginToArray(item.login);
           addDateToArray(item.date_creation);
           addRelevanceToArray(item.relevance);
+          addCategoryToArray(item.category);
           if(isValidISODate(dateFilterStart) && isValidISODate(dateFilterEnd)){
             if(item.is_delete != 1 && item.relevance == relevanceInt  && item.date_creation >= dateFilterStart && item.date_creation <= dateFilterEnd){
               setPlacemarks(placemarks => {
@@ -604,6 +638,8 @@ const MainMap = () => {
     setDescriptionM([]);
     setDateM([]);
     setRelevances([]);
+    setCategorys([]);
+    
     async function handleDeleteAndFetch() {
       await deleteProposal();
       fetchData();
@@ -632,10 +668,9 @@ const MainMap = () => {
       setRelevanceText('Отклонено');
     }
     if(selStatus == 4){
-      setRelevanceText('В ожидании расcмотрения');
+      setRelevanceText('В ожидании рассмотрения');
     }
-    relevances[relevanceIndex] = selStatus;
-    
+    relevances[relevanceIndex] = selStatus; 
   };
 
   async function getUserData(username) {
@@ -695,9 +730,13 @@ const handleLoginSubmit = async (e) => {
 
   const handleCodeSubmit = async (e) => {
     e.preventDefault();
-    if(code == codeEnter){
+    if(code == codeEnter && code != ''){
       setIsModalRecoveryOpen(true);
       setIsModalCodeOpen(false);
+    }
+    else{
+      setAttention('Код не подходит');
+      setIsModalAttentionOpen(true);
     }
     setIsModalCodeOpen(false);
   };
@@ -723,14 +762,14 @@ const handleLoginSubmit = async (e) => {
           body: JSON.stringify({ login: 'fire', text: complaint + '. Жалоба на заявку', familiarity: 1, link: indexProposal }), 
         });
       }
-  
-  
+
       if (!response.ok) {
         throw new Error('Ошибка');
       }
     } catch (error) {
       console.error(error); 
     }
+    setIsModalComplaintOpen(false);
   };
   
   const handleFilterSubmit = (e) => {
@@ -743,6 +782,7 @@ const handleLoginSubmit = async (e) => {
     setDescriptionM([]);
     setDateM([]);
     setRelevances([]);
+    setCategorys([]);
     if(selectedOption == 'Все заявки' || selectedOption == undefined){
       fetchData();
     }
@@ -763,23 +803,36 @@ const handleLoginSubmit = async (e) => {
   const handleRecoverySubmit = async (e) => {
     e.preventDefault();
     setIsModalRecoveryOpen(false);
-    try {
-        const response = await fetch('http://127.0.0.1:8000/change-password/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email: emailRecovery, new_password: newPassword }),
-        });
-        if (!response.ok) {
-            throw new Error('Ошибка при изменении пароля');
-        }
-        const data = await response.json();
-        console.log(data); 
-    } catch (error) {
-        console.error(error); 
+    if (/^\s*$/.test(newPassword)) {
+      setAttention('Заполните все поля без пробелов');
+      setIsModalAttentionOpen(true);
     }
-};
+    else{
+      if(newPassword.length > 3){
+        try {
+          const response = await fetch('http://127.0.0.1:8000/change-password/', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ email: emailRecovery, new_password: newPassword }),
+          });
+          if (!response.ok) {
+              throw new Error('Ошибка при изменении пароля');
+          }
+          const data = await response.json();
+          console.log(data); 
+      } catch (error) {
+          console.error(error); 
+      }
+      }
+      else{
+        setAttention('Пароль должен быть более 3 символов');
+        setIsModalAttentionOpen(true);
+      }
+    }
+      
+  };
 
   function getCurrentDate(separator='-'){
     let newDate = new Date()
@@ -799,6 +852,7 @@ const handleLoginSubmit = async (e) => {
         addIdToArray(maxIndex+1);
         setMaxIndex(maxIndex + 1);
         addRelevanceToArray(1);
+        addCategoryToArray(Number(selectedCategoryUser));
         const coords = e.get("coords");
         setPlacemarks([...placemarks, coords]);
         const dataToSend = {
@@ -809,6 +863,7 @@ const handleLoginSubmit = async (e) => {
             relevance: 4,
             date_creation: getCurrentDate(),
             is_delete: 0,
+            category: Number(selectedCategoryUser),
         };
         await axios.post('http://127.0.0.1:8000/proposal/create/', dataToSend, {
             headers: {
@@ -824,9 +879,9 @@ const handleLoginSubmit = async (e) => {
         setDescriptionM([]);
         setDateM([]);
         setRelevances([]);
+        setCategorys([]);
+        setLoginM([]);
         fetchData();
-      
-   
     }
   };
 
@@ -842,13 +897,18 @@ const handleLoginSubmit = async (e) => {
       setIsModalRegisterOpen(false);
       setIsModalProposalOpen(false);
       setIsModalCreateOpen(true);
+      setName('');
+      setDescription('');
     }
-   
   };
 
   const handleFilter = (e) => {
     e.preventDefault();
     setIsModalFilterOpen(true);
+    setIsModalArchiveOpen(false);
+    setNotificationsOpen(false);
+    setIsModalCreateOpen(false);
+    setProfileOpen(false);
     setDateFilterStart(new Date());
     setDateFilterEnd(new Date());
   };
@@ -917,6 +977,9 @@ const handleLoginSubmit = async (e) => {
   const handleLogin = (e) => {
     e.preventDefault();
     if(entryText == 'Войти'){
+      setUsername('');
+      setEmail('');
+      setPassword('');
       setIsModalRegisterOpen(false);
       setIsModalCreateOpen(false);
       setIsModalProposalOpen(false);
@@ -936,15 +999,23 @@ const handleLoginSubmit = async (e) => {
   };
 
   const handleRegister = (e) => {
+    setUsername('');
+    setEmail('');
+    setPassword('');
+    setRepeatPassword('');
 
     setIsModalLoginOpen(false);
     setIsModalCreateOpen(false);
     setIsModalProposalOpen(false);
     setIsModalRegisterOpen(true);
+    setProfileOpen(false);
   };
 
 
   const handleClick =  async (index) => {
+    setIsModalArchiveOpen(false);
+    setProfileOpen(false);
+    setNotificationsOpen(false);
     setIndexProposal(indexes[index]);
     setDislikeCountM([]);
     setLikeCountM([]);
@@ -953,13 +1024,12 @@ const handleLoginSubmit = async (e) => {
     setIsModalCreateOpen(false);
     setIsModalRegisterOpen(false);
     setIsModalProposalOpen(true);
+    setCommentText('');
     setNameIndex(nameM[index]);
     setDescriptionIndex('\t' + descriptionM[index]);
     setDateIndex(dateM[index]);
-    setLoginIndex(loginM[index]);
-
+    setLoginIndex(loginM[indexes[index]]);
     setIsEvaluation(0);
-
 
     const fetchCommentsData = async (commentId) => {
       if(login==""){
@@ -972,8 +1042,6 @@ const handleLoginSubmit = async (e) => {
         const data = await response.json();
         return data;
       }
-     
-   
     };
 
     async function fetchDataLike(commentId) {
@@ -1040,6 +1108,7 @@ const handleLoginSubmit = async (e) => {
 
     fetchEvaluationLike();
     fetchEvaluationDislike();
+
     if(relevances[index]==1){
       setRelevanceText('Рассмотрено');
     }
@@ -1053,6 +1122,23 @@ const handleLoginSubmit = async (e) => {
       setRelevanceText('В ожидании рассмотрения');
     }
     setRelevanceIndex(index);
+
+    if(categorys[index]==1){
+      setCategoryText('Облагораживание территории');
+    }
+    if(categorys[index]==2){
+      setCategoryText('Реконструкция ');
+    }
+    if(categorys[index]==3){
+      setCategoryText('Застройка');
+    }
+    if(categorys[index]==4){
+      setCategoryText('Очистка и уборка');
+    }
+    if(categorys[index]==5){
+      setCategoryText('Другое');
+    }
+    setCategoryIndex(index);
 };
 
 
@@ -1118,6 +1204,9 @@ const handleLoginSubmit = async (e) => {
   };
 
   const handleProfileClick = async () => {
+    setIsModalArchiveOpen(false);
+    setNotificationsOpen(false);
+    setIsModalCreateOpen(false);
     setProfileOpen(true);
     const response = await fetch(`http://127.0.0.1:8000/proposal/get/${login}/`);
     const data = await response.json();
@@ -1166,20 +1255,45 @@ const handleLoginSubmit = async (e) => {
     setSelectedOption(event.target.value);
   };
 
+  const handleArchiveClick = async () => {
+    const response = await fetch(`http://127.0.0.1:8000/proposal/get/`);
+    const data = await response.json();
+    setAllProposals(data.proposal);
+    setIsModalArchiveOpen(!isModalArchiveOpen);
+    setNotificationsOpen(false);
+    setIsModalCreateOpen(false);
+    setProfileOpen(false);
+  };
+
   const handleNotificationsClick = async () => {
 
     setNotificationsOpen(!notificationsOpen);
+    setIsModalArchiveOpen(false);
+    setIsModalCreateOpen(false);
+    setProfileOpen(false);
     const response = await fetch(`http://127.0.0.1:8000/notification/get/`);
     const data = await response.json();
-    setNotificationsList(data.notification);
+    let filteredNotificationsList = null;
+    if(is_staff == true){
+      filteredNotificationsList = data.notification.filter(notification => notification.login === login || notification.familiarity === 1);
+    }
+    else{
+      filteredNotificationsList = data.notification.filter(notification => notification.login === login);
+    }   
+    setNotificationsList(filteredNotificationsList);
   };
 
   const BellIconButton = ({ handleNotificationsClick, icon }) => {
     return (
-      <button onClick={handleNotificationsClick} className="bell-button">
+      <button onClick={handleNotificationsClick} className="bell" title="Уведомления">
         <i className={icon}></i>
       </button>
     );
+  };
+
+  const handleRegisterAdmin = (event) => {
+    setIsModalRegisterOpen(true);
+    setProfileOpen(false);
   };
 
   const handleForgotPassword = (event) => {
@@ -1213,8 +1327,22 @@ const handleLoginSubmit = async (e) => {
         }
   };
 
+  const handleEnterArchive = (e) => {
+    if (e.keyCode === 13) {
+      fetch(`http://127.0.0.1:8000/proposal/${searchIndex}/`)
+      .then(response => response.json())
+      .then(data => {
+        console.log(searchIndex);
+            handleClick(searchIndex);
+      })
+      .catch(error => {
+        setIsModalAttentionOpen(true);
+        setIsModalArchiveOpen(false);
+        setAttention('Заявки с таким номером не существует');
+      });
 
-
+        }
+  };
 
   const Header = () => {
     return (
@@ -1230,13 +1358,17 @@ const handleLoginSubmit = async (e) => {
           options={halfNameTrueM}
           renderInput={(params) => <TextField {...params} label="Поиск заявки по названию"  onKeyDown={handleEnter} />}
         />
+        {is_staff ? (
+          <button title="Архив" className="bell" onClick={(event) => handleArchiveClick()}>
+              <i class="fa-solid fa-box-archive"></i></button >    
+          ) : null  }
         {login !== '' && (
           <BellIconButton handleNotificationsClick={handleNotificationsClick} icon='fa-regular fa-bell' />
         ) }
         {login !== '' && (
           <ProfileButton handleProfileClick={handleProfileClick} />
         ) }
-          <LoginButton handleLogin={handleLogin} />
+          <LoginButton handleLogin={handleLogin}/>
     
       </div>
     );
@@ -1249,6 +1381,7 @@ const handleLoginSubmit = async (e) => {
       <Text style={{ fontSize: '19px' }}>{'Название: ' + nameIndex}</Text>
       <Text style={{ fontSize: '15px' }}>{'Описание: ' + descriptionIndex}</Text>
       <Text style={{ fontSize: '15px' }}>{'Статус: ' + relevanceText}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Категория: ' + categoryText}</Text>
       <Text style={{ fontSize: '15px' }}>{'Дата: ' + dateIndex}</Text>
       <Text style={{ fontSize: '15px' }}>{'Положительных оценок: ' + likeCount.toString()}</Text>
       <Text style={{ fontSize: '15px' }}>{'Отрицательных оценок оценок: ' + dislikeCount.toString()}</Text>
@@ -1271,16 +1404,20 @@ const handleLoginSubmit = async (e) => {
       <Text style={{ fontSize: '29px' }}>            Реестр улучшений городской среды</Text>
         {data.map(({ nameTrueM, descriptionTrueM, trueRelevance, dateTrueM }, index) => (  
           <React.Fragment key={index}>
-            <Text style={{ fontWeight: 'bold' }}>{nameTrueM}</Text>
+            <Text style={{ fontWeight: 'bold' }}>{'Проблема: ' + nameTrueM}</Text>
             <Text>{'\t\t\t\tОписание: ' + descriptionTrueM }</Text>
             <Text>{'\t\t\t\t' + trueRelevance }</Text>
-            <Text>{'\t\t\t\t' + dateTrueM }</Text>
+            <Text>{'\t\t\t\tДата: ' + dateTrueM }</Text>
             <Text>{' '}</Text>
           </React.Fragment>
         ))}  
       </Page>  
     </Document> 
   );
+
+  function handleTextFieldChange(event) {
+    setSearchIndex(event.target.value);
+  }
 
   return (
 
@@ -1305,8 +1442,12 @@ const handleLoginSubmit = async (e) => {
       {/* Модальное окно с формой регистрации */}
       <Modal isOpen={isModalRegisterOpen} className="modal-form" onRequestClose={() => setIsModalRegisterOpen(false)}>
         <div>
+        {!is_staff ? (
           <span className="entry-text-in-register" onMouseDown={handleLogin}>Вход</span>
+        ) : null }
+        {!is_staff ? (
           <span className="register-text-in-register" onMouseDown={() => { }}>Регистрация</span>
+        ) : null }
           <form onSubmit={handleRegisterSubmit}>
             <label>Логин</label>
             <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
@@ -1412,6 +1553,10 @@ const handleLoginSubmit = async (e) => {
                 ) : null  }
               </div>
 
+              <div className="horizontal">
+                <label>Категория: {categoryText}</label>
+              </div>    
+
                   <div className="horizontal"> 
                     <form onSubmit={handleLikeSubmit}>
                       <button className={`like-${getEvaluationLikeClass(isEvaluation)}`} type="submit"><i class="fa-regular fa-thumbs-up"></i></button>
@@ -1430,7 +1575,7 @@ const handleLoginSubmit = async (e) => {
                       <button type="submit"><i class="fa-solid fa-pen"></i></button>
                   </div>
 
-                <div className="comments"> 
+                <div className="comments__proposal"> 
                   <ul>
                   {commentsList.map((comment, index) => {
                       const isAvailable = comment.availability !== 1;
@@ -1476,15 +1621,16 @@ const handleLoginSubmit = async (e) => {
                 <a className="complaint-text" href="#" onClick={(handleComplaintProposal)}>Пожаловаться на заявку</a>
               ) : null  }
                {is_staff ? (
-                <a className="complaint-text" href="#" onClick={(event) => blockUser(loginIndex)}>Заблокировать пользователя</a>
+                <a className="complaint-text" href="#" onClick={(event) => handleBlockUser(loginIndex)}>Заблокировать пользователя</a>
               ) : null  }
                 <label className="date-text">Заявка создана: {dateIndex} | Пользователем - {loginIndex}</label>
+                <label className="date-text">Номер заявки: {indexProposal}</label>
               </div>
           </div>
         </Modal>
 
         {/* Модальное окно с требованием авторизоваться */}
-          <Modal isOpen={isModalAttentionOpen} className="attention-modal-form" onRequestClose={() => setIsModalAttentionOpen(false)}>
+        <Modal isOpen={isModalAttentionOpen} className="attention-modal-form" onRequestClose={() => setIsModalAttentionOpen(false)}>
           <div>
               <label className="name-text">{attention}</label>
               
@@ -1525,9 +1671,11 @@ const handleLoginSubmit = async (e) => {
           </div>
         </Modal>
 
+      {/* Модальное окно создания заявки */}
       <Modal isOpen={isModalCreateOpen} className="main-modal-form" onRequestClose={() => setIsModalCreateOpen(false)}>
         <form onSubmit={(e) => {
           e.preventDefault();
+
           if(/^\s*$/.test(name) || /^\s*$/.test(description)){
             setIsModalCreateOpen(false);
             setAttention('Заполните все поля');
@@ -1549,11 +1697,22 @@ const handleLoginSubmit = async (e) => {
                 setIsPlacemarkSet(true);
               }
               else{
+
                 setIsModalCreateOpen(false);
               }        
             }    
           }
         }}>
+          <label>
+            Категория
+            <select value={selectedCategoryUser} onChange={event => setSelectedCategoryUser(event.target.value)}>
+              <option value="1">Облагораживание территории</option>
+              <option value="2">Реконструкция</option>
+              <option value="3">Застройка</option>
+              <option value="4">Очистка и уборка</option>
+              <option value="5">Другое</option>
+            </select>
+          </label>
           <label>
             Проблема
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
@@ -1605,6 +1764,35 @@ const handleLoginSubmit = async (e) => {
         </form>
       </Modal>
 
+
+        {/* Модальное окно с архивом */}
+        <Modal isOpen={isModalArchiveOpen} className="archive-modal-form" onRequestClose={() => setIsModalArchiveOpen(false)}>
+        <div className="comments"> 
+         
+              <TextField
+                  label="Поиск заявки по индексу"
+                  value={searchIndex} 
+                  onChange={handleTextFieldChange}
+                  onKeyDown={handleEnterArchive} 
+                />      
+                  {allProposals.map((proposal, index) => (
+                    <li key={proposal.id} className="comment">
+                  
+                        <div><strong>{proposal.name}</strong></div>
+                        <div>Заявка номер: {proposal.id}</div> 
+                        <div style={{color: proposal.is_delete ? 'red' : 'green'}}>{proposal.is_delete === 0 ? 'Доступно' : 'Удалено'}</div> 
+                        <div>
+                          <button
+                            className="notification-item-button"
+                            onClick={(event) => handleClick(proposal.id)}>
+                            Перейти
+                          </button>
+                        </div>
+                    </li>
+                  ))}             
+          </div>
+        </Modal>
+
         {/* Модальное окно с заявками поиска */}
         <Modal isOpen={isModalSearchOpen} className="main-modal-form" onRequestClose={() => setIsModalSearchOpen(false)}>
         <div id="commentContainer" className="comments">
@@ -1641,7 +1829,7 @@ const handleLoginSubmit = async (e) => {
           <div className="comments__header">
             <h2>Уведомления</h2>
           </div>
-          {is_staff ? (
+        
           <div className="comments__list">
               {notificationsList.map((notification, index) => (
                 <li key={notification.id} className="comment">
@@ -1658,7 +1846,7 @@ const handleLoginSubmit = async (e) => {
                 </li>
               ))}
           </div>
-        ) : null  }
+      
         </div>
       </Modal>
 
@@ -1666,32 +1854,38 @@ const handleLoginSubmit = async (e) => {
       <Modal isOpen={isProfileOpen} className="main-modal-form" onRequestClose={() => setProfileOpen(false)}>
       <div className="comments">
           <div className="comments__header">
-            <h2>{login}</h2>
+              <h2>{login}</h2>
+
             {is_staff ? (
         <PDFDownloadLink document={<MyPDFDocument data={combinedData} />} fileName="AllProposals.pdf"> 
           {({ blob, url, loading, error }) => (loading ? 'Loading document...' : 'Скачать реестр улучшений городской среды')} 
         </PDFDownloadLink>
             ) : null  }
+          {is_staff ? (
+             <div className='forgot-password'>
+              <span onClick={handleRegisterAdmin}>Зарегистрировать нового администратора</span>
+            </div>
+          ) : null  }
+
           </div>
               {profileProposals.map((proposal, index) => (
                 <li key={proposal.id} className="comment">
-                  <div className="comment__content">
-                    <div>{proposal.name}</div> 
-                    <div>
-                      <button
-                        className="notification-item-button"
-                        onClick={(event) => handleClick(proposal.id)}>
-                        Перейти
-                      </button>
-                    </div>
+                <div>
+                  <div><strong>{proposal.name}</strong></div>
+                  <div>Заявка номер: {proposal.id}</div> 
+                  <div style={{color: proposal.is_delete ? 'red' : 'green'}}>{proposal.is_delete === 0 ? 'Доступно' : 'Удалено'}</div> 
+                  <div>
+                    <button
+                      className="notification-item-button"
+                      onClick={(event) => handleClick(proposal.id)}>
+                      Перейти
+                    </button>
                   </div>
-                </li>
+                </div>
+              </li>
               ))}
-           
-     
         </div>
       </Modal>
-
     </div>
   );
 };
