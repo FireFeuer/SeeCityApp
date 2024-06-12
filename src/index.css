@@ -94,7 +94,7 @@ button, button:focus{
 }
 
 .header > *:last-child {
-  margin-right: 0; /* Убираем отступ справа для последнего элемента */
+  margin-right: 0; 
 }
 
 
@@ -379,6 +379,7 @@ label.relevance-text-declined {
   text-align: left; 
 }
 
+
 label.description-text{
   font-size: 0.9rem; 
   color: #a0a0a0;
@@ -399,16 +400,12 @@ label.relevance-text{
 }
 
 label.relevance-text-waiting{
-
   font-size: 1.3rem; 
-
   color: #ecd60d;
 }
 
 label.relevance-text-done{
- 
   font-size: 1.3rem; 
-
   color: #47c200;
 }
 
@@ -419,7 +416,6 @@ label.relevance-text-declined{
 }
 
 label.relevance-text-consideration{
-  
   font-size: 1.3rem; 
   color: #b1ff84;
 }
@@ -428,9 +424,20 @@ label.relevance-text-consideration{
   display: flex; 
 }
 
+.horizontal-admin{
+  display: flex; 
+  margin-right: 10px;
+}
+
+.vertical{
+  display: flex; 
+  flex-direction: column;
+  margin-top: -0.5em;
+}
+
 .horizontal-comment{
   display: flex; 
-  margin-top: -0.6em;
+  margin-top: -0.5em;
 }
 
 button.like-{
@@ -438,10 +445,9 @@ button.like-{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+  font-size: 0.98em;
 }
 
 button.dislike-{
@@ -449,10 +455,10 @@ button.dislike-{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+
+  font-size: 0.98em;
 }
 
 button.like-grey{
@@ -460,10 +466,10 @@ button.like-grey{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+
+  font-size: 0.98em;
 }
 
 button.dislike-grey{
@@ -471,10 +477,10 @@ button.dislike-grey{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+
+  font-size: 0.98em;
 }
 
 button.like-green{
@@ -482,10 +488,10 @@ button.like-green{
   background-color: #31d100; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+
+  font-size: 0.98em;
 }
 
 button.dislike-green{
@@ -493,10 +499,10 @@ button.dislike-green{
   background-color: #31d100; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+  font-size: 0.98em;
+
 }
 
 button.like-red{
@@ -504,10 +510,10 @@ button.like-red{
   background-color: #e00000; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+  font-size: 0.98em;
+
 }
 
 button.dislike-red{
@@ -515,10 +521,10 @@ button.dislike-red{
   background-color: #e00000; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.9em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.6vh;
+  font-size: 0.98em;
+
 }
 
 
@@ -528,10 +534,9 @@ button.like-comment-{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 16px;
+  height: 2.5vh;
+  font-size: 0.9em;
 }
 
 button.dislike-comment-{
@@ -539,10 +544,10 @@ button.dislike-comment-{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
+
 }
 
 button.like-comment-grey{
@@ -552,8 +557,8 @@ button.like-comment-grey{
   cursor: pointer;
   border-radius: 24px;
   height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  font-size: 0.9em;
+
 }
 
 button.dislike-comment-grey{
@@ -561,10 +566,10 @@ button.dislike-comment-grey{
   background-color: #8f8f8f; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
+
 }
 
 button.like-comment-green{
@@ -572,10 +577,10 @@ button.like-comment-green{
   background-color: #31d100; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
+
 }
 
 button.dislike-comment-green{
@@ -583,21 +588,19 @@ button.dislike-comment-green{
   background-color: #31d100; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
 }
 
 button.like-comment-red{
   width:50%;
-  background-color: #e00000; 
+  background-color: #e00000;
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
 }
 
 button.dislike-comment-red{
@@ -605,10 +608,9 @@ button.dislike-comment-red{
   background-color: #e00000; 
   color: white;
   cursor: pointer;
-  border-radius: 24px;
-  height: 3vh;
-  font-size: 0.7em;
-  font-weight: bold;
+  border-radius: 10px;
+  height: 2.5vh;
+  font-size: 0.9em;
 }
 
 
@@ -616,7 +618,13 @@ button.dislike-comment-red{
   color: #777; 
   font-size: 0.9em; 
   margin-top: 0em; 
+  margin-left: -0.6em; 
   display: flex; 
+}
+
+.horizontal-staff{
+  margin-left: -0.6em; 
+  display: flex;
 }
 
 .inputtext {
@@ -644,9 +652,6 @@ button.dislike-comment-red{
 .complaint-text{
   color: #ff0000; 
   font-size: 0.9em;
-  margin-top: -0.1em; 
-  display: flex;
-  margin-right: 12px;
 }
 
 .forgot-password{
@@ -725,13 +730,37 @@ button.red-button {
   box-shadow: 0 1px 1px rgba(0,0,0,0.2);
   font-weight: bold;
   
+  height: 40px; 
+  width: 90px; 
+}
 
+button.red-button-admin {
+  background-color: #ff3939;
+  border-radius: 12px;
+  color: black;
+  cursor: pointer;
+  font-size: 15px; 
+  text-align: center;
+  
+  outline: none;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.2);
+  font-weight: bold;
+  margin-left: 10px;
   height: 40px; 
   width: 90px; 
 }
 
 input[type="text"] {
 
-  padding: 2px 5px; /* Уменьшаем внутренние отступы */
-  font-size: 1em; /* Устанавливаем размер шрифта */
+  padding: 2px 5px; 
+  font-size: 1em; 
+}
+
+.comment-list {
+  list-style: none;
+  padding-left: 0; 
+}
+
+.comment-list li {
+  margin-bottom: 10px; 
 }

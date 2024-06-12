@@ -852,6 +852,7 @@ const handleLoginSubmit = async (e) => {
         addIdToArray(maxIndex+1);
         setMaxIndex(maxIndex + 1);
         addRelevanceToArray(1);
+        let MaxMaxIndex = maxIndex + 1;
         addCategoryToArray(Number(selectedCategoryUser));
         const coords = e.get("coords");
         setPlacemarks([...placemarks, coords]);
@@ -873,6 +874,13 @@ const handleLoginSubmit = async (e) => {
             .catch(error => {
                 console.error('Ошибка при отправке запроса:', error);
             });    
+            const responseNotification = await fetch('http://127.0.0.1:8000/notification/create/', {
+              method: 'POST', 
+              headers: {
+                'Content-Type': 'application/json', 
+              },
+              body: JSON.stringify({ login: 'fire', text: 'Заявка номер ' + MaxMaxIndex + ' ожидает вашего рассмотрения', familiarity: 1, link: maxIndex+1 }), 
+            });
             setPlacemarks([]);
         setNameM([]);
         setIndexes([]);
@@ -1142,6 +1150,21 @@ const handleLoginSubmit = async (e) => {
 };
 
 
+function archiveItemClick(index, is_delete, coords) {
+  setIsModalAttentionOpen(false);
+  if(is_delete == 1){
+    handleClick(index);
+  }
+  else{
+    const coordinates = coords.split(',').map(Number);
+    console.log(coordinates);
+    map.setCenter(coordinates);
+    map.setZoom(19);
+    handleClick(index);
+  }
+  
+}
+
   function getColorClass(relevanceText) {
     switch (relevanceText) {
       case 'Рассмотрено':
@@ -1154,6 +1177,38 @@ const handleLoginSubmit = async (e) => {
         return 'waiting';
       default:
         return ''; 
+    }
+  }
+
+  function getCategoryText(category) {
+    switch (category) {
+      case 1:
+        return 'Облагораживание территории';
+      case 2:
+        return 'Реконструкция';
+      case 3:
+        return 'Застройка';
+      case 4:
+        return 'Очистка и уборка';
+      case 5:
+          return 'Другое';
+      default:
+        return '';
+    }
+  }
+
+  function getStatusText(relevance) {
+    switch (relevance) {
+      case 1:
+        return 'Рассмотрено';
+      case 2:
+        return 'Отклонено';
+      case 3:
+        return 'Выполнено';
+      case 4:
+        return 'В ожидании рассмотрения';
+      default:
+        return '';
     }
   }
 
@@ -1240,7 +1295,11 @@ const handleLoginSubmit = async (e) => {
     nameTrueM: name,
     descriptionTrueM: descriptionTrueM[index],
     trueRelevance: trueRelevances[index],
-    dateTrueM: dateTrueM[index],
+    dateTrueM: new Date(dateTrueM[index]).toLocaleDateString('ru', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }) ,
   }));
 
   const options = [
@@ -1275,10 +1334,14 @@ const handleLoginSubmit = async (e) => {
     const data = await response.json();
     let filteredNotificationsList = null;
     if(is_staff == true){
-      filteredNotificationsList = data.notification.filter(notification => notification.login === login || notification.familiarity === 1);
+      filteredNotificationsList = data.notification
+        .filter(notification => notification.login === login || notification.familiarity === 1)
+        .reverse(); 
     }
     else{
-      filteredNotificationsList = data.notification.filter(notification => notification.login === login);
+      filteredNotificationsList = data.notification
+        .filter(notification => notification.login === login)
+        .reverse(); 
     }   
     setNotificationsList(filteredNotificationsList);
   };
@@ -1332,8 +1395,22 @@ const handleLoginSubmit = async (e) => {
       fetch(`http://127.0.0.1:8000/proposal/${searchIndex}/`)
       .then(response => response.json())
       .then(data => {
-        console.log(searchIndex);
-            handleClick(searchIndex);
+            if(data.is_delete == 1){
+              setIsModalAttentionOpen(true);
+              setIsModalArchiveOpen(false);
+              setAttention('Вы просматриваете удалённую заявку');
+              handleClick(searchIndex);
+              setSearchIndex('');
+            }
+            else{
+              setIsModalArchiveOpen(false);
+              const coordinates = data.coordinates.split(',').map(Number);
+              map.setCenter(coordinates);
+              map.setZoom(19);
+              handleClick(searchIndex);
+              setSearchIndex('');
+            }
+        
       })
       .catch(error => {
         setIsModalAttentionOpen(true);
@@ -1358,10 +1435,10 @@ const handleLoginSubmit = async (e) => {
           options={halfNameTrueM}
           renderInput={(params) => <TextField {...params} label="Поиск заявки по названию"  onKeyDown={handleEnter} />}
         />
-        {is_staff ? (
+        {login !== '' && (
           <button title="Архив" className="bell" onClick={(event) => handleArchiveClick()}>
               <i class="fa-solid fa-box-archive"></i></button >    
-          ) : null  }
+             ) }
         {login !== '' && (
           <BellIconButton handleNotificationsClick={handleNotificationsClick} icon='fa-regular fa-bell' />
         ) }
@@ -1382,7 +1459,11 @@ const handleLoginSubmit = async (e) => {
       <Text style={{ fontSize: '15px' }}>{'Описание: ' + descriptionIndex}</Text>
       <Text style={{ fontSize: '15px' }}>{'Статус: ' + relevanceText}</Text>
       <Text style={{ fontSize: '15px' }}>{'Категория: ' + categoryText}</Text>
-      <Text style={{ fontSize: '15px' }}>{'Дата: ' + dateIndex}</Text>
+      <Text style={{ fontSize: '15px' }}>{'Дата: ' + new Date(dateIndex).toLocaleDateString('ru', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })}</Text>
       <Text style={{ fontSize: '15px' }}>{'Положительных оценок: ' + likeCount.toString()}</Text>
       <Text style={{ fontSize: '15px' }}>{'Отрицательных оценок оценок: ' + dislikeCount.toString()}</Text>
       <Text>{' '}</Text>
@@ -1407,7 +1488,7 @@ const handleLoginSubmit = async (e) => {
             <Text style={{ fontWeight: 'bold' }}>{'Проблема: ' + nameTrueM}</Text>
             <Text>{'\t\t\t\tОписание: ' + descriptionTrueM }</Text>
             <Text>{'\t\t\t\t' + trueRelevance }</Text>
-            <Text>{'\t\t\t\tДата: ' + dateTrueM }</Text>
+            <Text>{'\t\t\t\tДата: ' + dateTrueM}</Text>
             <Text>{' '}</Text>
           </React.Fragment>
         ))}  
@@ -1538,7 +1619,7 @@ const handleLoginSubmit = async (e) => {
                       <option value="3">Отклонено</option>
                       <option value="4">В ожидании рассмотрения</option>
                     </select>
-                    <button className="red-button" type="submit">Поменять статус</button>
+                    <button className="red-button-admin" type="submit">Поменять статус</button>
                   </div>
                 </form>
                 ) : null  }
@@ -1559,12 +1640,16 @@ const handleLoginSubmit = async (e) => {
 
                   <div className="horizontal"> 
                     <form onSubmit={handleLikeSubmit}>
-                      <button className={`like-${getEvaluationLikeClass(isEvaluation)}`} type="submit"><i class="fa-regular fa-thumbs-up"></i></button>
+                    <div className="horizontal"> 
                       <label className="description-text">{likeCount.toString()}</label>
+                      <button className={`like-${getEvaluationLikeClass(isEvaluation)}`} type="submit"><i class="fa-regular fa-thumbs-up"></i></button>     
+                    </div>       
                     </form>
                     <form onSubmit={handleDislikeSubmit}>
-                      <button className={`dislike-${getEvaluationDislikeClass(isEvaluation)}`} type="submit"><i class="fa-regular fa-thumbs-down"></i></button>
+                    <div className="horizontal"> 
                       <label className="description-text">{dislikeCount.toString()}</label>
+                      <button className={`dislike-${getEvaluationDislikeClass(isEvaluation)}`} type="submit"><i class="fa-regular fa-thumbs-down"></i></button>  
+                    </div>           
                     </form>               
                   </div>
             
@@ -1575,14 +1660,14 @@ const handleLoginSubmit = async (e) => {
                       <button type="submit"><i class="fa-solid fa-pen"></i></button>
                   </div>
 
-                <div className="comments__proposal"> 
-                  <ul>
+           
+                  <ul className="comment-list">
                   {commentsList.map((comment, index) => {
                       const isAvailable = comment.availability !== 1;
                       return isAvailable ? (
                           <li key={comment.id}>
                               <p><strong>{comment.login}</strong> {comment.text}</p> 
-                        <div className="horizontal-comment">                    
+                      <div className="horizontal-comment">                    
                         <form >
                           <div className="horizontal"> 
                           <label className="description-text">{likeCountM[index] === undefined ? '0' : likeCountM[index].toString()}</label>
@@ -1599,22 +1684,31 @@ const handleLoginSubmit = async (e) => {
                             </button>
                             </div>
                         </form>  
-                            <p class = 'date-comment'>{comment.date.toString()} </p>
-                            {!is_staff ? (
-                            <a className="complaint-text" href="#" onClick={(handleComplaintComment)}>Пожаловаться на комментарий</a>
-                          ) : null  }
-                             {is_staff ? (
-                            <a className="complaint-text" href="#"  onClick={(event) => handleBlockUser(comment.login)}>Заблокировать пользователя</a>
-                          ) : null  }
+                        <p class = 'date-comment'>{new Date(comment.date).toLocaleDateString('ru', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })} </p>
+                       
+                    
+                     
+                      </div>  
+                      <div className='vertical'> 
+                                {!is_staff ? (
+                              <a className="complaint-text" href="#" onClick={(handleComplaintComment)}>Пожаловаться на комментарий</a>
+                            ) : null  }
                               {is_staff ? (
-                            <a className="complaint-text" href="#" onClick={(event) => handleDeleteComment(comment.id)}>Удалить комментарий</a>
-                          ) : null  }
-                            </div>    
+                              <a className="complaint-text" href="#"  onClick={(event) => handleBlockUser(comment.login)}>Заблокировать пользователя</a>
+                            ) : null  }
+                                {is_staff ? (
+                              <a className="complaint-text" href="#" onClick={(event) => handleDeleteComment(comment.id)}>Удалить комментарий</a>
+                            ) : null  } 
+                         </div> 
                       </li>
                         ) : null;
                       })}
                   </ul>
-                </div>
+            
               </form>
               <div className='horizontal'> 
               {!is_staff ? (
@@ -1623,7 +1717,11 @@ const handleLoginSubmit = async (e) => {
                {is_staff ? (
                 <a className="complaint-text" href="#" onClick={(event) => handleBlockUser(loginIndex)}>Заблокировать пользователя</a>
               ) : null  }
-                <label className="date-text">Заявка создана: {dateIndex} | Пользователем - {loginIndex}</label>
+                <label className="date-text">Заявка создана: {new Date(dateIndex).toLocaleDateString('ru', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })} | Пользователем - {loginIndex}</label>
                 <label className="date-text">Номер заявки: {indexProposal}</label>
               </div>
           </div>
@@ -1755,13 +1853,16 @@ const handleLoginSubmit = async (e) => {
 
       {/* Модальное окно с жалобой */}
       <Modal isOpen={isModalComplaintOpen} className="main-modal-form" onRequestClose={() => setIsModalComplaintOpen(false)}>
-      <label>
+        <div>
+        <label>
           Укажите жалобу
           <textarea type="text" value={complaint} onChange={(e) => setComplaint(e.target.value)} />
       </label>
         <form onSubmit={handleComplaintSubmit} >
           <button type="submit">Отправить</button>
         </form>
+        </div>
+      
       </Modal>
 
 
@@ -1775,21 +1876,57 @@ const handleLoginSubmit = async (e) => {
                   onChange={handleTextFieldChange}
                   onKeyDown={handleEnterArchive} 
                 />      
-                  {allProposals.map((proposal, index) => (
+             
+                    {allProposals.map((proposal, index) => {
+                      const isAvailable = is_staff;
+                      return isAvailable ? (
                     <li key={proposal.id} className="comment">
                   
                         <div><strong>{proposal.name}</strong></div>
-                        <div>Заявка номер: {proposal.id}</div> 
-                        <div style={{color: proposal.is_delete ? 'red' : 'green'}}>{proposal.is_delete === 0 ? 'Доступно' : 'Удалено'}</div> 
+                        <div>{'Статус: ' + getStatusText(proposal.relevance)}</div>
+                        <div>{'Категория: ' + getCategoryText(proposal.category)}</div>
+                        <div>{new Date(proposal.date_creation).toLocaleDateString('ru', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}</div>
+                        <div>Заявка номер: {proposal.id}</div>    
+                          <div style={{color: proposal.is_delete ? 'red' : 'green'}}>{proposal.is_delete === 0 ? 'Доступно' : 'Удалено'}</div>           
                         <div>
                           <button
                             className="notification-item-button"
-                            onClick={(event) => handleClick(proposal.id)}>
+                            onClick={(event) => archiveItemClick(proposal.id, proposal.is_delete, proposal.coordinates)}>
                             Перейти
                           </button>
                         </div>
                     </li>
-                  ))}             
+                         ) :    (
+                          proposal.is_delete === 0 && (
+                  
+                         <li key={proposal.id} className="comment">
+                  
+                         <div><strong>{proposal.name}</strong></div>
+                         <div>{'Статус: ' + getStatusText(proposal.relevance)}</div>
+                         <div>{'Категория: ' + getCategoryText(proposal.category)}</div>
+                         <div>{new Date(proposal.date_creation).toLocaleDateString('ru', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                      year: 'numeric'
+                                    })}</div>
+                         <div>Заявка номер: {proposal.id}</div>    
+                           <div style={{color: proposal.is_delete ? 'red' : 'green'}}>{proposal.is_delete === 0 ? 'Доступно' : 'Удалено'}</div>           
+                         <div>
+                           <button
+                             className="notification-item-button"
+                             onClick={(event) => archiveItemClick(proposal.id, proposal.is_delete, proposal.coordinates)}>
+                             Перейти
+                           </button>
+                         </div>
+                      </li>
+                  )
+                  );
+                  })}
+                 
           </div>
         </Modal>
 
